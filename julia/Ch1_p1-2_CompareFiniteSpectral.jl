@@ -5,19 +5,36 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ a0262a4e-3a21-11f0-0172-6b54044618ae
-using Plots, SparseArrays, ToeplitzMatrices,LinearAlgebra
+using Plots, SparseArrays, ToeplitzMatrices,LinearAlgebra,LaTeXStrings
 
 # ╔═╡ eed77738-f192-4ed0-a94d-e0e444d60ad1
 md"Estimate first derivative of a point with series of point values given in $[-\pi,\pi]$. The sample function here is $e^{\sin(x)}$."
+
+# ╔═╡ fb119ce3-0689-442d-94cb-d771cc8c400a
+md"The reason why dot comes in pair in spectral methods is that the shape is symmetry. If you skew the shape the pairnesss disappear. For example try yourself $f(x) = e^{\sin(x)-\sin(2x)/2}$, which is a surrogate of sawtooth wave. Furthermore if the derivative becomes discontinous, the convergence rate reduces to second order $(f(x) = e^{\sin(x)\lvert{\sin(x)}\rvert})$."
 
 # ╔═╡ b9fbd0db-2a04-4b4c-8d94-9bfdbad95f88
 plt = plot(); nothing
 
 # ╔═╡ f9683fae-0829-4b16-97d3-7e71cdcaf5a1
-f(x) = exp(sin(x))
+f(x) = exp(sin(x)) 
+# exp(sin(x)*abs(sin(x))) 
+# exp(sin(x)-sin(2x)/2)
 
 # ╔═╡ 05b760e5-0506-43f4-87bf-9134b71ea3e8
-dfdx(x) = f(x)*cos(x)
+dfdx(x) = f(x)*(cos(x)) 
+# f(x)*(cos(x)*abs(sin(x))+sin(x)*sign(sin(x))*cos(x)) 
+# f(x)*(cos(x)-cos(2x))
+
+# ╔═╡ 09d02bf9-d194-43ac-9478-a1a2b07d646a
+begin
+	x = -π:0.01:π
+	u = f.(x)
+	w = dfdx.(x)
+	plot(x,u,c=:black,label=L"f(x)")
+	plot!(x,w,c=:black,ls=:dash,label=L"\mathrm{d}f/\mathrm{d}x")
+	plot!(xlabel=L"x", ylabel=L"f(x),\,\mathrm{d}f/\mathrm{d}x",xlimit=(-π,π))
+end
 
 # ╔═╡ 145d4477-e12b-44c5-9ad3-fd71757e11b6
 function genDiffMat_2nd(N; Δx=2π/N)
@@ -56,7 +73,7 @@ end
 
 # ╔═╡ ea8b25e4-715e-4966-b569-99a626a72217
 begin
-	NFD = 2 .^ (3:12)
+	NFD = 2 .^ (3:16)
 	errorL2 = zeros(length(NFD))
 	errorL4 = zeros(length(NFD))
 	for (i,N)∈enumerate(NFD)
@@ -101,17 +118,19 @@ begin
 end; nothing
 
 # ╔═╡ 16d1b338-0335-4760-b08f-f6d0ea7e9d5b
-plot!(finalPlt,xscale=:log10, yscale=:log10)
+plot!(finalPlt,xscale=:log10, yscale=:log10,xlabel=L"N", ylabel=L"\mathrm{Error}_\infty")
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 ToeplitzMatrices = "c751599d-da0a-543b-9d20-d0a503d91d24"
 
 [compat]
+LaTeXStrings = "~1.4.0"
 Plots = "~1.40.13"
 ToeplitzMatrices = "~0.8.5"
 """
@@ -122,7 +141,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.5"
 manifest_format = "2.0"
-project_hash = "e6195c52d0fdd1db94ce09490a4fc8f54ff07645"
+project_hash = "67e554d77ad8b16beec46393388cad3823ffe0ba"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1390,7 +1409,9 @@ version = "1.8.1+0"
 # ╔═╡ Cell order:
 # ╠═a0262a4e-3a21-11f0-0172-6b54044618ae
 # ╟─eed77738-f192-4ed0-a94d-e0e444d60ad1
-# ╠═16d1b338-0335-4760-b08f-f6d0ea7e9d5b
+# ╟─09d02bf9-d194-43ac-9478-a1a2b07d646a
+# ╟─fb119ce3-0689-442d-94cb-d771cc8c400a
+# ╟─16d1b338-0335-4760-b08f-f6d0ea7e9d5b
 # ╟─b9fbd0db-2a04-4b4c-8d94-9bfdbad95f88
 # ╟─ea8b25e4-715e-4966-b569-99a626a72217
 # ╟─d3aaa3ff-20a7-4f80-b5d6-1137478a6a87

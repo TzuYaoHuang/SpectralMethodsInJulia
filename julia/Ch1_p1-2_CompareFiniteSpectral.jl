@@ -10,12 +10,6 @@ using Plots, SparseArrays, ToeplitzMatrices,LinearAlgebra
 # ╔═╡ eed77738-f192-4ed0-a94d-e0e444d60ad1
 md"Estimate first derivative of a point with series of point values given in $[-\pi,\pi]$. The sample function here is $e^{\sin(x)}$."
 
-# ╔═╡ b9fbd0db-2a04-4b4c-8d94-9bfdbad95f88
-plt = plot(); nothing
-
-# ╔═╡ 16d1b338-0335-4760-b08f-f6d0ea7e9d5b
-plot!(plt,xscale=:log10, yscale=:log10)
-
 # ╔═╡ f9683fae-0829-4b16-97d3-7e71cdcaf5a1
 f(x) = exp(sin(x))
 
@@ -56,6 +50,9 @@ function genDiffMat_4th(N; Δx=2π/N)
 	D = sparse(I, J, V, N, N)/Δx
 	return D
 end
+
+# ╔═╡ b9fbd0db-2a04-4b4c-8d94-9bfdbad95f88
+plt = plot(); nothing
 
 # ╔═╡ ea8b25e4-715e-4966-b569-99a626a72217
 begin
@@ -101,6 +98,9 @@ begin
 	end
 	scatter!(plt,NSD,errorSD,label="Spectral",color=:green)
 end; nothing
+
+# ╔═╡ 16d1b338-0335-4760-b08f-f6d0ea7e9d5b
+plot!(plt,xscale=:log10, yscale=:log10)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """

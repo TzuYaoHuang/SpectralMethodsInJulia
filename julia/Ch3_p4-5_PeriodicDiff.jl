@@ -41,15 +41,20 @@ end
 # f(x) = max(0, 1-abs(x-π)/2) 
 f(x) = exp(sin(x))
 
+# ╔═╡ 48f27484-4d0a-42bd-8642-32a830627522
+dfdx(x) = f(x)*cos(x)
+
 # ╔═╡ c33eeded-989f-4824-9767-ade3515c3f11
 begin
-	N = 24
+	N = 20
 	Δx = 2π/N
 	x = Δx*(1:N)
 	u = f.(x)
+	wAna = dfdx.(x)
 	wSinc = diff_sinc(u)
 	wFFT = diff_fft(u)
 	println("Maximum difference of sinc and fft: ", norm(wSinc .- wFFT, Inf))
+	println("Maximum difference of analytical and fft: ", norm(wAna .- wFFT, Inf))
 end
 
 # ╔═╡ 66e67daf-9c25-4901-889b-2fdcb23e6357
@@ -1350,11 +1355,12 @@ version = "1.8.1+0"
 # ╔═╡ Cell order:
 # ╠═0f66abc0-3cd6-11f0-171b-5dccbcb976c7
 # ╟─73688473-bbcf-43a7-8cd7-59af6240205e
-# ╟─c33eeded-989f-4824-9767-ade3515c3f11
+# ╠═c33eeded-989f-4824-9767-ade3515c3f11
 # ╟─66e67daf-9c25-4901-889b-2fdcb23e6357
-# ╟─36f76d9a-fc3c-4960-86d6-819d8f2b9b5f
-# ╟─64381484-4534-4612-b81d-91bc3e2aacee
-# ╟─4bbacc33-4413-46ac-8b1d-57d90b4886de
-# ╟─cbef004f-c498-4efa-b108-5fb0b3b2a37d
+# ╠═36f76d9a-fc3c-4960-86d6-819d8f2b9b5f
+# ╠═64381484-4534-4612-b81d-91bc3e2aacee
+# ╠═4bbacc33-4413-46ac-8b1d-57d90b4886de
+# ╠═cbef004f-c498-4efa-b108-5fb0b3b2a37d
+# ╠═48f27484-4d0a-42bd-8642-32a830627522
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

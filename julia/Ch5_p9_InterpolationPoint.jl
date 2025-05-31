@@ -5,7 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 4018a8e6-3dac-11f0-1822-bb2e8779d0ba
-using Plots, LaTeXStrings, Polynomials
+using Plots, LaTeXStrings, Polynomials, LinearAlgebra
 
 # ╔═╡ 2f015ea7-bd3d-4878-b670-62c321e17b05
 md"Compare the interpolation of different interpolation points distribution: equidistance and Chebyshev points. Obviously, Chebyshev is far better."
@@ -35,10 +35,58 @@ begin
 	plot(pp..., layout=(2,1))
 end
 
+# ╔═╡ 20efbf32-23cf-46aa-9234-9e325fa2d85d
+begin
+	xPin = -1.0:0.005:1.0
+	uPin = f.(xPin)
+
+	NList = 4:2:60
+
+	eList = zeros(2,length(NList))
+
+	for (iN,N)∈enumerate(NList)
+		xList = [-1 .+ 2*(0:N)/N, cos.(π*(0:N)/N)]
+		for (ix, x)∈enumerate(xList)
+			u = f.(x)
+			p = fit(x,u)
+			up = p.(xPin)
+			eList[ix,iN] = norm(up .- uPin, Inf)
+		end
+	end
+
+	plot()
+	for (ix, x)∈enumerate(xList)
+		plot!(NList, eList[ix,:], label=lList[ix],lw=2)
+	end
+	plot!(yscale=:log10, xlabel=L"N", ylabel=L"\varepsilon_\infty")
+end
+
+# ╔═╡ 88cee4e6-f4c8-4d61-a05a-b35bb77cc0df
+begin
+	ReList = -1.2:0.02:1.2
+	ImList = -1.2:0.02:1.2
+	zMat = [r+1im*i for r∈ReList, i∈ImList]
+
+	Ne = 30
+	x = -1 .+ 2*(0:Ne)/Ne
+	# x = cos.(π*(0:Ne)/Ne)
+	u = f.(x)
+	p = fit(x,u)
+
+	interpError = (@. abs(p(zMat) - f(zMat)))'
+	
+
+	plot()
+	contourf!(ReList, ImList, interpError, levels=10. .^(-4:0), colorbar_scale=:log10, color=cgrad(:batlow, interpError, scale=:log10))
+	scatter!(x, zero(x), ms=1, c=:black)
+	plot!(xlabel=L"\mathfrak{Re}", ylabel=L"\mathfrak{Im}", legend=false, aspect_ratio=:equal, xlimit=[-1.2,1.2], ylimit=[-1.2,1.2])
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
 
@@ -54,7 +102,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.5"
 manifest_format = "2.0"
-project_hash = "ab171e871ce652bbcd9257d3f01863e62dcdcb97"
+project_hash = "64ca07adaa78827309e2b1c5b997c69f3bea2e4d"
 
 [[deps.AliasTables]]
 deps = ["PtrArrays", "Random"]
@@ -1210,6 +1258,8 @@ version = "1.8.1+0"
 # ╠═4018a8e6-3dac-11f0-1822-bb2e8779d0ba
 # ╠═2f015ea7-bd3d-4878-b670-62c321e17b05
 # ╟─d25b8d04-7ae6-470d-b8dc-5e4fb6fe39a5
+# ╟─20efbf32-23cf-46aa-9234-9e325fa2d85d
+# ╟─88cee4e6-f4c8-4d61-a05a-b35bb77cc0df
 # ╟─d97ffe3c-9ff0-4498-9384-fdf8d4b10e7c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

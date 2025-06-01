@@ -41,4 +41,38 @@ end
 
 export ChebDiffMat
 
+"""
+    polyInterp(t, y)
+
+Construct a callable polynomial interpolant through the points in
+vectors `t`,`y` using the barycentric interpolation formula.
+Inspired from [this website](https://tobydriscoll.net/fnc-julia/globalapprox/barycentric.html#function-polyinterp)
+"""
+function polyInterp(t, y)
+    N = length(t) - 1
+    C = (t[end] - t[1])/8  # scale
+    tc = t/C
+
+    ω = ones(N+1)
+    for i∈2:N+1
+        d = tc[1:i-1] .- tc[i]
+        @. ω[1:i-1] *= d
+        ω[i] = prod(-d)
+    end
+    a = 1 ./ω
+
+    function p(x)
+        terms = @. a/(x - t)
+        if any(isinf.(terms))
+            idx = findfirst(x.==t)
+            return y[idx]
+        end
+        return sum(y .* terms) / sum(terms)
+    end
+
+    return p
+end
+
+export polyInterp
+
 end

@@ -11,6 +11,11 @@
     u = unew; it = it+1;
   end
   u = [0;u;0];
+
+  % NEW: compute Jacobian and spectral radius
+J = D2 \ diag(exp(u(2:N)));
+disp(max(abs(eig(J))))      % should be about 0.2943
+
   clf, subplot('position',[.1 .4 .8 .5])
   plot(x,u,'.','markersize',16)
   xx = -1:.01:1;

@@ -15,7 +15,7 @@ function ChebDiffMat(N)
     c(ii) = ifelse(0<ii<N, 1, 2)
 
     D = zeros(N+1, N+1)
-    x = cos.((0:N) .* (π / N))
+    x = cos.((N:-1:0) .* (π / N))
 
     # Off-diagonal
     for i∈0:N
@@ -29,7 +29,7 @@ function ChebDiffMat(N)
     end
     
     # diagonal
-    D[1,1] = (2N^2+1)/6
+    D[1,1] = -(2N^2+1)/6
     D[N+1,N+1] = -D[1,1]
     for i∈1:N-1 
         I=i+1

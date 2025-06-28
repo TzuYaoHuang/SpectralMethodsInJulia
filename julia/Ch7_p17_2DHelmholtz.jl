@@ -5,59 +5,61 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 2b2b66f2-3ee8-11f0-1e0f-d9a53f21beed
-using Plots, LaTeXStrings, LinearAlgebra, Polynomials
+using Plots, LaTeXStrings, LinearAlgebra, Polynomials, Interpolations
 
 # ╔═╡ bf738f6a-90bf-46e4-89ba-fdbdac8bc58c
 include("Chebyshev.jl"); using .Chebyshev
 
 # ╔═╡ 3aa187de-b491-4551-878f-9b51a34df06d
-md"We try to solve eigen value problem $\partial_{xx} u = \lambda u$, $-1<x<1$, $u(\pm 1) = 0$. The analytical solutions are $\lambda = -π^2j^2/4$, $j=1,2,...$, with eigen function $\sin(j\pi(x+1)/2)$."
+md"We try to solve eigen value problem $\partial_{xx} u + \partial_{yy} u + k^2 u = \exp(-10((y-1)^2+(x-0.5)^2))$, $k=9\approx\pi\sqrt{1.5^2+2.5^2}$, $-1<x,y<1$, $u(x = \pm 1) = 0$, $u(y = \pm 1) = 0$. $k$ represents 3 half wave in x and 5 half wave in y. (Treften has a typo here). If you really set the value to the number, the solution will explode due to resonance (condition number explode)."
 
-# ╔═╡ 915e76c4-f262-45ad-8c31-95e0c455f9b3
+# ╔═╡ 6bebc4ee-a7f6-4553-a3e9-7a9af03d4c25
 begin
-	N = 36
-	
-	# Differentiation Matrix
-	D,x = ChebDiffMat(N)
-	D2 = D^2
-	D2Inner = D2[2:end-1,2:end-1]
-	xInner = x[2:end-1]
-
-    xx = -1:.01:1
-
-	# Boundary Condition
-	uLeft, uRight = 0, 0
+	N = 24
+	k = 9
 end; nothing
 
-# ╔═╡ d863b98d-65e8-429a-a033-b91f30de5d23
+# ╔═╡ ebe93b6c-c47a-4186-8086-ff205f1e83cd
 begin
-	λ, V = eigen(D2Inner)
-    ii = sortperm(-λ)
-    λ = λ[ii]
-    V = V[:,ii]
+	D,x = ChebDiffMat(N)
+	
+	XX = x * ones(N+1)'
+	YY = ones(N+1) * x'
+	X = XX[2:end-1,2:end-1][:]
+	Y = YY[2:end-1,2:end-1][:]
+	D2 = D^2
+	D2Inner = D2[2:end-1,2:end-1]
+	Iinner = Matrix{Float64}(I, N-1, N-1)
+	L = kron(Iinner,D2Inner) + kron(D2Inner,Iinner) + k^2*Matrix{Float64}(I, (N-1)^2, (N-1)^2)
+	f = @. exp(-10*((Y-1)^2+(X-.5)^2));
+	u = L\f;
+	println("Condition number of L is $(cond(L)).")
+end
 
-    jList = 5:5:30
-    pp = [plot() for j∈jList]
-    for (ij,j)∈enumerate(jList)
-        u = [uLeft, V[:,j]..., uRight]
-        scatter!(pp[ij], x, u, color=:black)
-        p = polyInterp(x,u)
-        uu = p.(xx)
-        plot!(pp[ij], xx, uu, color=:black,label="")
-        plot!(pp[ij], axis=([], false), legend=false, title="$(λ[j]*4/π^2)", titlefont=font(8,"Computer Modern"))
-    end
-    plot(pp..., layout=(length(jList),1))
+# ╔═╡ 915f281f-a693-491a-bcc1-6b84998b7892
+begin
+	uu = zeros(N+1,N+1)
+	uu[2:end-1,2:end-1] .= reshape(u, N-1, N-1)
+
+	itp = linear_interpolation((x,x),uu)
+	println("u(0,0) = $(itp(0,0))")
+	
+	plot()
+	contourf!(x,x,uu',color=cgrad(:Spectral;rev=true),clim=(-0.025,0.025),lw=0)
+    plot!(xlimit=(-1,1),ylimit=(-1,1),aspect_ratio=:equal,xlabel=L"x",ylabel=L"y")
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
 
 [compat]
+Interpolations = "~0.15.1"
 LaTeXStrings = "~1.4.0"
 Plots = "~1.40.13"
 Polynomials = "~4.0.19"
@@ -69,7 +71,18 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.5"
 manifest_format = "2.0"
-project_hash = "64ca07adaa78827309e2b1c5b997c69f3bea2e4d"
+project_hash = "2bb087e3661f5bab593d771720031bc112905e20"
+
+[[deps.Adapt]]
+deps = ["LinearAlgebra", "Requires"]
+git-tree-sha1 = "f7817e2e585aa6d924fd714df1e2a84be7896c60"
+uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+version = "4.3.0"
+weakdeps = ["SparseArrays", "StaticArrays"]
+
+    [deps.Adapt.extensions]
+    AdaptSparseArraysExt = "SparseArrays"
+    AdaptStaticArraysExt = "StaticArrays"
 
 [[deps.AliasTables]]
 deps = ["PtrArrays", "Random"]
@@ -84,6 +97,12 @@ version = "1.1.2"
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 version = "1.11.0"
+
+[[deps.AxisAlgorithms]]
+deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
+git-tree-sha1 = "01b8ccb13d68535d73d2b0c23e39bd23155fb712"
+uuid = "13072b0f-2c55-5437-9ae7-d433b7a33950"
+version = "1.1.0"
 
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -105,6 +124,16 @@ deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jl
 git-tree-sha1 = "2ac646d71d0d24b44f3f8c84da8c9f4d70fb67df"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.18.4+0"
+
+[[deps.ChainRulesCore]]
+deps = ["Compat", "LinearAlgebra"]
+git-tree-sha1 = "06ee8d1aa558d2833aa799f6f0b31b30cada405f"
+uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+version = "1.25.2"
+weakdeps = ["SparseArrays"]
+
+    [deps.ChainRulesCore.extensions]
+    ChainRulesCoreSparseArraysExt = "SparseArrays"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -214,6 +243,11 @@ deps = ["Mmap"]
 git-tree-sha1 = "9e2f36d3c96a820c678f2f1f1782582fcf685bae"
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 version = "1.9.1"
+
+[[deps.Distributed]]
+deps = ["Random", "Serialization", "Sockets"]
+uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+version = "1.11.0"
 
 [[deps.DocStringExtensions]]
 git-tree-sha1 = "e7b7e6f178525d17c720ab9c081e4ef04429f860"
@@ -350,6 +384,16 @@ version = "8.5.0+0"
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 version = "1.11.0"
+
+[[deps.Interpolations]]
+deps = ["Adapt", "AxisAlgorithms", "ChainRulesCore", "LinearAlgebra", "OffsetArrays", "Random", "Ratios", "Requires", "SharedArrays", "SparseArrays", "StaticArrays", "WoodburyMatrices"]
+git-tree-sha1 = "88a101217d7cb38a7b481ccd50d21876e1d1b0e0"
+uuid = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+version = "0.15.1"
+weakdeps = ["Unitful"]
+
+    [deps.Interpolations.extensions]
+    InterpolationsUnitfulExt = "Unitful"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "e2222959fbc6c19554dc15174c81bf7bf3aa691c"
@@ -571,6 +615,15 @@ version = "1.1.3"
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
 
+[[deps.OffsetArrays]]
+git-tree-sha1 = "117432e406b5c023f665fa73dc26e79ec3630151"
+uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+version = "1.17.0"
+weakdeps = ["Adapt"]
+
+    [deps.OffsetArrays.extensions]
+    OffsetArraysAdaptExt = "Adapt"
+
 [[deps.Ogg_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "887579a3eb005446d514ab7aeac5d1d027658b8f"
@@ -748,6 +801,16 @@ deps = ["SHA"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 version = "1.11.0"
 
+[[deps.Ratios]]
+deps = ["Requires"]
+git-tree-sha1 = "1342a47bf3260ee108163042310d26f2be5ec90b"
+uuid = "c84ed2f1-dad5-54f0-aa8e-dbefe2724439"
+version = "0.4.5"
+weakdeps = ["FixedPointNumbers"]
+
+    [deps.Ratios.extensions]
+    RatiosFixedPointNumbersExt = "FixedPointNumbers"
+
 [[deps.RecipesBase]]
 deps = ["PrecompileTools"]
 git-tree-sha1 = "5c3d09cc4f31f5fc6af001c250bf1278733100ff"
@@ -797,6 +860,11 @@ git-tree-sha1 = "c5391c6ace3bc430ca630251d02ea9687169ca68"
 uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 version = "1.1.2"
 
+[[deps.SharedArrays]]
+deps = ["Distributed", "Mmap", "Random", "Serialization"]
+uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
+version = "1.11.0"
+
 [[deps.Showoff]]
 deps = ["Dates", "Grisu"]
 git-tree-sha1 = "91eddf657aca81df9ae6ceb20b959ae5653ad1de"
@@ -828,6 +896,17 @@ deps = ["Random"]
 git-tree-sha1 = "95af145932c2ed859b63329952ce8d633719f091"
 uuid = "860ef19b-820b-49d6-a774-d7a799459cd3"
 version = "1.0.3"
+
+[[deps.StaticArrays]]
+deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
+git-tree-sha1 = "0feb6b9031bd5c51f9072393eb5ab3efd31bf9e4"
+uuid = "90137ffa-7385-5640-81b9-e52037218182"
+version = "1.9.13"
+weakdeps = ["ChainRulesCore", "Statistics"]
+
+    [deps.StaticArrays.extensions]
+    StaticArraysChainRulesCoreExt = "ChainRulesCore"
+    StaticArraysStatisticsExt = "Statistics"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "192954ef1208c7019899fbf8049e717f92959682"
@@ -953,6 +1032,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "5db3e9d307d32baba7067b13fc7b5aa6edd4a19a"
 uuid = "2381bf8a-dfd0-557d-9999-79630e7b1b91"
 version = "1.36.0+0"
+
+[[deps.WoodburyMatrices]]
+deps = ["LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "c1a7aa6219628fcd757dede0ca95e245c5cd9511"
+uuid = "efce3f68-66dc-5838-9240-27a6d6f5f9b6"
+version = "1.0.0"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
@@ -1224,8 +1309,9 @@ version = "1.8.1+0"
 # ╔═╡ Cell order:
 # ╠═2b2b66f2-3ee8-11f0-1e0f-d9a53f21beed
 # ╠═bf738f6a-90bf-46e4-89ba-fdbdac8bc58c
-# ╠═3aa187de-b491-4551-878f-9b51a34df06d
+# ╟─3aa187de-b491-4551-878f-9b51a34df06d
 # ╠═6bebc4ee-a7f6-4553-a3e9-7a9af03d4c25
-# ╠═ebe93b6c-c47a-4186-8086-ff205f1e83cd
+# ╟─ebe93b6c-c47a-4186-8086-ff205f1e83cd
+# ╟─915f281f-a693-491a-bcc1-6b84998b7892
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

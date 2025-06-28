@@ -3,6 +3,15 @@ module Chebyshev
 using LinearAlgebra
 
 """
+    ChebPoint(N)
+
+Return Chebyshev point of `N+1`.
+"""
+ChebPoint(N) = cos.((N:-1:0) .* (π / N))
+
+export ChebPoint
+
+"""
     ChebDiffMat(N)
 
 Compute Chebyshev differention matrix and Chebyshev collocation point of the size `N+1`
@@ -15,7 +24,7 @@ function ChebDiffMat(N)
     c(ii) = ifelse(0<ii<N, 1, 2)
 
     D = zeros(N+1, N+1)
-    x = cos.((N:-1:0) .* (π / N))
+    x = ChebPoint(N)
 
     # Off-diagonal
     for i∈0:N

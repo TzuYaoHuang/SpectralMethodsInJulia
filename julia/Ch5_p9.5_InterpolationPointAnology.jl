@@ -7,79 +7,82 @@ using InteractiveUtils
 # ╔═╡ 4018a8e6-3dac-11f0-1822-bb2e8779d0ba
 using Plots, LaTeXStrings, Polynomials, LinearAlgebra
 
+# ╔═╡ a25b29b1-479b-461c-892e-aa72811128f9
+include("Chebyshev.jl"); using .Chebyshev
+
 # ╔═╡ 2f015ea7-bd3d-4878-b670-62c321e17b05
-md"Compare the interpolation of different interpolation points distribution: equidistance and Chebyshev points. Obviously, Chebyshev is far better."
+md"Demonstrate the physical intepretation of Chebyshev points using moving source in hydrodynamics. We distribute the source uniformly as initial condition and let them freely evolved with the induced velocity. The two sources at the boundary ($-1 \vee 1$) are fixed."
 
-# ╔═╡ d97ffe3c-9ff0-4498-9384-fdf8d4b10e7c
-f(x) = 1/(1+16x^2)
-
-# ╔═╡ d25b8d04-7ae6-470d-b8dc-5e4fb6fe39a5
+# ╔═╡ e24f1b38-4fda-4da2-88b8-d39033d82273
 begin
-	xAna = -1.01:0.005:1.01
-	uAna = f.(xAna)
+	N = 20
+	tEnd = 2
+end;nothing
 
-	N = 16
-
-	xList = [-1 .+ 2*(0:N)/N, cos.(π*(0:N)/N)]
-	lList = ["Equidistance", "Chebyshev"]
-	pp = [plot(), plot()]
-	for (ix, x)∈enumerate(xList)
-		u = f.(x)
-		p = fit(x,u)
-		up = p.(xAna)
-		plot!(pp[ix], xAna, uAna, lw=2, c=:gray)
-		plot!(pp[ix], xAna, up, lw=2, c=:black)
-		scatter!(pp[ix], x, u, ms=5, c=:black)
-		plot!(pp[ix], xlimit=(-1.05,1.05), ylimit=(-1,1.5),legend=false)
-	end
-	plot(pp..., layout=(2,1))
-end
-
-# ╔═╡ 20efbf32-23cf-46aa-9234-9e325fa2d85d
+# ╔═╡ 5184bb4e-003e-4aa5-a17b-c9c58d1254fb
 begin
-	xPin = -1.0:0.005:1.0
-	uPin = f.(xPin)
-
-	NList = 4:2:60
-
-	eList = zeros(2,length(NList))
-
-	for (iN,N)∈enumerate(NList)
-		xList = [-1 .+ 2*(0:N)/N, cos.(π*(0:N)/N)]
-		for (ix, x)∈enumerate(xList)
-			u = f.(x)
-			p = fit(x,u)
-			up = p.(xPin)
-			eList[ix,iN] = norm(up .- uPin, Inf)
-		end
-	end
-
-	plot()
-	for (ix, x)∈enumerate(xList)
-		plot!(NList, eList[ix,:], label=lList[ix],lw=2)
-	end
-	plot!(yscale=:log10, xlabel=L"N", ylabel=L"\varepsilon_\infty")
-end
-
-# ╔═╡ 88cee4e6-f4c8-4d61-a05a-b35bb77cc0df
-begin
-	ReList = -1.2:0.02:1.2
-	ImList = -1.2:0.02:1.2
-	zMat = [r+1im*i for r∈ReList, i∈ImList]
-
-	Ne = 30
-	x = -1 .+ 2*(0:Ne)/Ne
-	# x = cos.(π*(0:Ne)/Ne)
-	u = f.(x)
-	p = fit(x,u)
-
-	interpError = (@. abs(p(zMat) - f(zMat)))'
+	Δt = 1/N^2
+	q = 1/(N+1)   # source strength
+	qΔt = q*Δt
+	NTime = round(Int,tEnd/Δt)
 	
+	x⁰ = collect(LinRange(-1,1,N+1))
+	xo = copy(x⁰)
+	x  = copy(x⁰)
+	f  = zero(x⁰)
+	y  = zero(x⁰)
+	xCheb = ChebPoint(N)
 
+	xHis = zeros(N+1,NTime+1)
+	xHis[:,1] .= x⁰
+end; nothing
+
+# ╔═╡ 230a79f5-7a52-4438-aff6-ecd78a02fe96
+function v!(f,x)
+	for i∈eachindex(f),j∈eachindex(x)
+		if i==j continue end
+		dx = x[i]-x[j]
+		f[i] += sign(dx)*abs(dx)^-1
+	end
+	f[1] = f[end] = 0
+end
+
+# ╔═╡ 446c26aa-91fc-4667-8a6c-3a5cee01516d
+begin
+	a = 1
+	anim = Animation()
 	plot()
-	contourf!(ReList, ImList, interpError, levels=10. .^(-4:0), colorbar_scale=:log10, color=cgrad(:batlow, interpError, scale=:log10))
-	scatter!(x, zero(x), ms=1, c=:black)
-	plot!(xlabel=L"\mathfrak{Re}", ylabel=L"\mathfrak{Im}", legend=false, aspect_ratio=:equal, xlimit=[-1.2,1.2], ylimit=[-1.2,1.2])
+	scatter!(x,y)
+	scatter!(xCheb,y)
+	plot!(xlimit=(-1,1), ylimit=(-0.5,0.5),aspect_ratio=:equal,xlabel=L"x", ylabel=L"y")
+	frame(anim,plot!())
+	for iTime∈1:NTime
+		xo .= x
+
+		# Heun's predictor-corrector
+		f .= 0
+		v!(f,x); for I∈eachindex(x) x[I] = xo[I] + f[I] * qΔt end
+		v!(f,x); for I∈eachindex(x) x[I] = xo[I] + f[I] * qΔt/2 end
+		xHis[:,iTime+1] .= x
+		
+		plot()
+		scatter!(x,y, label="Calculated")
+		scatter!(xCheb,y, label="Chebyshev")
+		plot!(xlimit=(-1,1), ylimit=(-0.5,0.5),aspect_ratio=:equal,xlabel=L"x", ylabel=L"y")
+		frame(anim,plot!())
+	end
+	mp4(anim; fps=10)
+end
+
+# ╔═╡ 8b2a2e07-83e2-421c-a1f8-990f8f0d3f65
+begin
+	a
+	plot()
+	for i∈eachindex(x)
+		plot!(xHis[i,:],0:Δt:tEnd, color=:black,label="")
+	end
+	scatter!(xCheb, y.+tEnd, label="")
+	plot!(ylimit=(0,1.05tEnd),xlabel=L"x", ylabel=L"t")
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1256,10 +1259,12 @@ version = "1.8.1+0"
 
 # ╔═╡ Cell order:
 # ╠═4018a8e6-3dac-11f0-1822-bb2e8779d0ba
-# ╠═2f015ea7-bd3d-4878-b670-62c321e17b05
-# ╟─d25b8d04-7ae6-470d-b8dc-5e4fb6fe39a5
-# ╟─20efbf32-23cf-46aa-9234-9e325fa2d85d
-# ╟─88cee4e6-f4c8-4d61-a05a-b35bb77cc0df
-# ╟─d97ffe3c-9ff0-4498-9384-fdf8d4b10e7c
+# ╠═a25b29b1-479b-461c-892e-aa72811128f9
+# ╟─2f015ea7-bd3d-4878-b670-62c321e17b05
+# ╠═e24f1b38-4fda-4da2-88b8-d39033d82273
+# ╟─446c26aa-91fc-4667-8a6c-3a5cee01516d
+# ╟─8b2a2e07-83e2-421c-a1f8-990f8f0d3f65
+# ╟─5184bb4e-003e-4aa5-a17b-c9c58d1254fb
+# ╟─230a79f5-7a52-4438-aff6-ecd78a02fe96
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

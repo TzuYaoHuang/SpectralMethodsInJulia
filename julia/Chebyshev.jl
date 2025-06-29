@@ -1,13 +1,13 @@
 module Chebyshev
 
-using LinearAlgebra
+using LinearAlgebra, FFTW
 
 """
     ChebPoint(N)
 
 Return Chebyshev point of `N+1`.
 """
-ChebPoint(N) = cos.((N:-1:0) .* (π / N))
+@inline ChebPoint(N) = cos.((N:-1:0) .* (π / N))
 
 export ChebPoint
 
@@ -83,5 +83,39 @@ function polyInterp(t, y)
 end
 
 export polyInterp
+
+
+"""
+    ChebDiffFFT(v)
+
+Evaluate Chebyshev differentiation of `v` using FFT and iFFT.
+"""
+function ChebDiffFFT(v)
+    N = length(v) - 1
+    x = ChebPoint(N)
+
+    V = Vector{eltype(v)}(undef, 2N)
+    w = Vector{eltype(v)}(undef,  N+1)
+    ii = 0:N-1
+
+    V[1:N+1] .= v[1:N+1]
+    @inbounds for i in 1:N-1
+        V[N+i+1] = v[N-i+1]  # manually reversing v[2:N]
+    end
+
+    # real fft (cosine)
+    k = fftfreq(2N,2N)
+    U = real.(fft(V))
+    W = real.(ifft(1im * k .* U)) 
+
+    # Because the x is defined in reversed direction so all derivative should be add with a negative.
+    @. w[2:N] = W[2:N] / sqrt(1-x[2:N]^2)
+    w[1] = -sum(@. ii^2 * U[ii+1])/N - 0.5*N*U[N+1]
+    w[N+1]   = -sum(@. (-1)^(ii+1) * ii^2 * U[ii+1])/N - 0.5*(-1)^(N+1)*N*U[N+1]
+
+    return w
+end
+
+export ChebDiffFFT
 
 end

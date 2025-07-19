@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.8
+# v0.20.13
 
 using Markdown
 using InteractiveUtils
@@ -11,50 +11,99 @@ using Plots, LaTeXStrings, LinearAlgebra, FFTW
 include("Chebyshev.jl"); using .Chebyshev
 
 # ╔═╡ 7f195441-19d5-4410-ab2b-b0194cd64413
-md"This notebook try to demonstrate how to solve the second order wave equation with FFT Chebyshev and leap-frog method. $\partial_{tt} u = \partial_{xx}u + \partial_{yy}u$ with fixed boundary condition $u(\pm 1) = 0$."
+md"This notebook try to demonstrate how to solve the second order wave equation with FFT Chebyshev and leap-frog method. $\partial_{tt} u = \partial_{xx}u + \partial_{yy}u$ with fixed boundary condition $u(\pm 1,\pm 1) = 0$ and initial condition of $u_t(x,y,0)=0$."
 
 # ╔═╡ 13b1f842-d9a7-4f41-89a1-db0c7030d8a4
 begin
-	N = 80
-	tEnd = 4
+	N = 24
+	tEnd = 1
 end
 
 # ╔═╡ 0925af56-94e2-4c68-9ded-9556bf11f545
 begin
+	Ng = (N+1,N+1)
 	x = ChebPoint(N)
-	Δt= 8/N^2
+	xr = reverse(x)
+	Δt= 6/N^2
 	NTime = round(Int,tEnd/Δt)
-end
+	plotPeriod = round(Int,0.025/Δt)
+
+	XX = [xx for xx∈x, yy∈x]
+	YY = [yy for xx∈x, yy∈x]
+
+	uₓₓ = zeros(Ng)
+	uᵥᵥ = zeros(Ng)
+	ii = 2:N
+	V = Vector{Float64}(undef, 2N)
+	k = fftfreq(2N,2N)
+end; nothing
 
 # ╔═╡ c3da609a-eb0b-472e-b72c-d13c5dc5b8d1
-vf(x) = exp(-200x^2)
+vf(x,y) = exp(-40((x-0.4)^2+y^2))
 
-# ╔═╡ 25b436bd-e6e7-4ed6-9925-d816b63cfcd4
-BC!(v) = (v[1] = v[end] = 0)
+# ╔═╡ 0fa0ed67-9361-4610-badc-82ce5863be4c
+function BC!(v)
+	v[:,1] .= 0
+	v[:,end] .= 0
+	v[1,:] .= 0
+	v[end,:] .= 0
+end
 
 # ╔═╡ d45832e2-e1ff-4ccf-97e4-2fce5941e3f6
 begin
-	v = vf.(x); BC!(v)
-	vOld= vf.(x.+Δt); BC!(vOld) # the plus or minus sign of Δt can control the advection direction
+	v = vf.(XX,YY); BC!(v)
+	vOld= copy(v)
 	vNew = copy(v)
 
 	anim = Animation()
 
 	for iTime∈1:NTime
-		w = v |> ChebDiffFFT |> ChebDiffFFT
-		@. vNew = 2v - vOld + Δt^2*w
-		BC!(vNew)
-		vOld .= v; v .= vNew
 
-		if iTime % 5 == 1 
-			plot(x,v,color=:black,lw=2,lable="")
-			plot!(xlimit=(-1,1), ylimit=(-1.2,1.2),xlabel=L"x",ylabel=L"u")
+		# get uₓₓ
+		for I∈2:N
+			V[1:N+1] .= v[I,1:N+1]
+			@inbounds for i in 1:N-1
+		        V[N+i+1] = v[I,N-i+1]  # manually reversing v[2:N]
+		    end
+
+			U = real.(fft(V))
+    		W1 = real.(ifft(1im * k .* U)) 
+			W2 = real.(ifft(-  k.^2 .* U)) 
+
+			@. uₓₓ[I,ii] = W2[ii]/(1-x[ii]^2) - x[ii]*W1[ii]/(1-x[ii]^2)^1.5
+		end
+		
+		# get uᵥᵥ
+		for J∈2:N
+			V[1:N+1] .= v[1:N+1,J]
+			@inbounds for i in 1:N-1
+		        V[N+i+1] = v[N-i+1,J]  # manually reversing v[2:N]
+		    end
+
+			U = real.(fft(V))
+    		W1 = real.(ifft(1im * k .* U)) 
+			W2 = real.(ifft(-  k.^2 .* U)) 
+
+			@. uᵥᵥ[ii,J] = W2[ii]/(1-x[ii]^2) - x[ii]*W1[ii]/(1-x[ii]^2)^1.5
+		end
+
+		@. vNew = 2v - vOld + Δt^2*(uₓₓ+uᵥᵥ)
+		BC!(vNew)
+		
+		if iTime % plotPeriod == 0 
+			plot()
+			contourf!(xr,xr,reverse(vNew)',color=cgrad(:Spectral;rev=true),clim=(-0.5,1),lw=0)
+			plot!(xlimit=(-1,1),ylimit=(-1,1), aspect_ratio=:equal, xlabel=L"x", ylabel=L"y")
 			frame(anim,plot!())
 		end
+		vOld .= v; v .= vNew
 	end
 
-	mp4(anim;fps=24)
+	mp4(anim;fps=12)
 end
+
+# ╔═╡ 235689db-5aaa-4790-b102-6dfd81e5d948
+anim.frames
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -74,7 +123,7 @@ Plots = "~1.40.13"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.5"
+julia_version = "1.11.6"
 manifest_format = "2.0"
 project_hash = "b78b286be3fe9607dca4fa82399866711f4721d8"
 
@@ -1233,9 +1282,10 @@ version = "1.8.1+0"
 # ╠═77f0aecb-7d3c-42fd-a3d0-4f6bf33325dc
 # ╟─7f195441-19d5-4410-ab2b-b0194cd64413
 # ╠═13b1f842-d9a7-4f41-89a1-db0c7030d8a4
-# ╠═0925af56-94e2-4c68-9ded-9556bf11f545
-# ╠═d45832e2-e1ff-4ccf-97e4-2fce5941e3f6
-# ╠═c3da609a-eb0b-472e-b72c-d13c5dc5b8d1
-# ╠═25b436bd-e6e7-4ed6-9925-d816b63cfcd4
+# ╟─0925af56-94e2-4c68-9ded-9556bf11f545
+# ╟─d45832e2-e1ff-4ccf-97e4-2fce5941e3f6
+# ╟─c3da609a-eb0b-472e-b72c-d13c5dc5b8d1
+# ╟─235689db-5aaa-4790-b102-6dfd81e5d948
+# ╟─0fa0ed67-9361-4610-badc-82ce5863be4c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.8
+# v0.20.13
 
 using Markdown
 using InteractiveUtils
@@ -34,7 +34,7 @@ begin
 	eList = zeros(length(fList), length(NNList))
 	
 	for (iN,N)∈enumerate(NNList)
-		D,x = ChebDiffMat(N)
+		x = ChebPoint(N)
 		for (iF,f)∈enumerate(fList)
 			x = ChebPoint(N)
 			u = f.(x)
@@ -69,11 +69,11 @@ begin
 		u = f.(x)
 		w = ChebDiffFFT(u)
 		err = @. w - dfdx(x)
-		plot!(pp[iN], xx, uu, color=:black)
+		plot!(pp[iN], xx, uu, label=L"f(x)", color=:black)
 		# plot!(pp[iN], x, dfdx.(x), color=:red)
 		# plot!(pp[iN], x, w, color=:black)
-		scatter!(pp[iN], x, u, color=:black,legend=false,title=L"N=%$(N)")
-		plot!(twinx(pp[iN]), x, err, color=:black, ls=:dash,legend=false)
+		scatter!(pp[iN], x, u, label="", color=:black,title=L"N=%$(N)", legend=:topleft)
+		plot!(twinx(pp[iN]), x, err, label=L"f'(x)\,\mathrm{Error}", color=:black, ls=:dash, legend=:topright)
 	end
 end
 
@@ -98,7 +98,7 @@ Plots = "~1.40.13"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.5"
+julia_version = "1.11.6"
 manifest_format = "2.0"
 project_hash = "b78b286be3fe9607dca4fa82399866711f4721d8"
 

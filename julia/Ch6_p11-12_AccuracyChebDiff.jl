@@ -1,11 +1,11 @@
 ### A Pluto.jl notebook ###
-# v0.20.8
+# v0.20.13
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 84047cf4-3e35-11f0-356b-63c768e46448
-using Plots, LaTeXStrings, LinearAlgebra
+using Plots, LaTeXStrings, LinearAlgebra, FFTW
 
 # ╔═╡ 77f0aecb-7d3c-42fd-a3d0-4f6bf33325dc
 include("Chebyshev.jl"); using .Chebyshev
@@ -48,7 +48,7 @@ begin
 end
 
 # ╔═╡ a54f4341-399e-415e-9677-e7919bd2d039
-md"Chebyshev $D^{N+1}_N$ should be zero."
+md"Chebyshev $D^{N+1}_N$ should be zero, as the $N+1^\mathrm{th}$ derivative of polynomial of order $N$ is zero."
 
 # ╔═╡ b557b408-54cb-42ac-bf86-2005ec1db9de
 begin
@@ -75,9 +75,9 @@ begin
 		u = f.(x)
 		w = D*u
 		err = @. w - dfdx(x)
-		plot!(pp[iN], xx, uu, color=:black)
-		scatter!(pp[iN], x, u, color=:black,legend=false,title=L"N=%$(N)")
-		plot!(twinx(pp[iN]), x, err, color=:black, ls=:dash,legend=false)
+		plot!(pp[iN], xx, uu, label=L"f(x)", color=:black)
+		scatter!(pp[iN], x, u, label="", color=:black,title=L"N=%$(N)", legend=:topleft)
+		plot!(twinx(pp[iN]), x, err, label=L"f'(x)\,\mathrm{Error}", color=:black, ls=:dash, legend=:topright)
 	end
 end
 
@@ -87,11 +87,13 @@ plot(pp..., layout=(2,1))
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [compat]
+FFTW = "~1.9.0"
 LaTeXStrings = "~1.4.0"
 Plots = "~1.40.13"
 """
@@ -100,9 +102,23 @@ Plots = "~1.40.13"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.5"
+julia_version = "1.11.6"
 manifest_format = "2.0"
-project_hash = "98c3038efcc5596fd6136721546d5e7288ba65f7"
+project_hash = "b78b286be3fe9607dca4fa82399866711f4721d8"
+
+[[deps.AbstractFFTs]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "d92ad398961a3ed262d8bf04a1a2b8340f915fef"
+uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
+version = "1.5.0"
+
+    [deps.AbstractFFTs.extensions]
+    AbstractFFTsChainRulesCoreExt = "ChainRulesCore"
+    AbstractFFTsTestExt = "Test"
+
+    [deps.AbstractFFTs.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[deps.AliasTables]]
 deps = ["PtrArrays", "Random"]
@@ -273,6 +289,18 @@ git-tree-sha1 = "466d45dc38e15794ec7d5d63ec03d776a9aff36e"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.4+1"
 
+[[deps.FFTW]]
+deps = ["AbstractFFTs", "FFTW_jll", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
+git-tree-sha1 = "797762812ed063b9b94f6cc7742bc8883bb5e69e"
+uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+version = "1.9.0"
+
+[[deps.FFTW_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "6d6219a004b8cf1e0b4dbe27a2860b8e04eba0be"
+uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
+version = "3.3.11+0"
+
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 version = "1.11.0"
@@ -359,6 +387,12 @@ git-tree-sha1 = "55c53be97790242c29031e5cd45e8ac296dadda3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "8.5.0+0"
 
+[[deps.IntelOpenMP_jll]]
+deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl"]
+git-tree-sha1 = "ec1debd61c300961f98064cfb21287613ad7f303"
+uuid = "1d5cc7b8-4909-519e-a0f8-d0f5ad9712d0"
+version = "2025.2.0+0"
+
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -437,6 +471,11 @@ version = "0.16.7"
     DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
     SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
     SymEngine = "123dc426-2d89-5057-bbad-38513e3affd8"
+
+[[deps.LazyArtifacts]]
+deps = ["Artifacts", "Pkg"]
+uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
+version = "1.11.0"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -533,6 +572,12 @@ deps = ["Dates", "Logging"]
 git-tree-sha1 = "f02b56007b064fbfddb4c9cd60161b6dd0f40df3"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.1.0"
+
+[[deps.MKL_jll]]
+deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "oneTBB_jll"]
+git-tree-sha1 = "282cadc186e7b2ae0eeadbd7a4dffed4196ae2aa"
+uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
+version = "2025.2.0+0"
 
 [[deps.MacroTools]]
 git-tree-sha1 = "1e0228a030642014fe5cfe68c2c0a818f9e3f522"
@@ -1181,6 +1226,12 @@ deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
 version = "1.59.0+0"
 
+[[deps.oneTBB_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "d5a767a3bb77135a99e433afe0eb14cd7f6914c3"
+uuid = "1317d2d5-d96f-522e-a858-c73665f53c3e"
+version = "2022.0.0+0"
+
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
@@ -1212,7 +1263,7 @@ version = "1.8.1+0"
 # ╟─9ff707a6-88a7-4fb6-9e3f-d72c42887122
 # ╟─65af878f-f047-48bd-a3f4-b044d12ec3db
 # ╠═a54f4341-399e-415e-9677-e7919bd2d039
-# ╠═b557b408-54cb-42ac-bf86-2005ec1db9de
+# ╟─b557b408-54cb-42ac-bf86-2005ec1db9de
 # ╟─25036049-aa34-475b-a276-4719f78819b6
 # ╟─6b7ac5ca-16a8-402f-a2b4-a33cc1ebeab5
 # ╟─00000000-0000-0000-0000-000000000001

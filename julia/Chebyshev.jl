@@ -7,7 +7,7 @@ using LinearAlgebra, FFTW
 
 Return Chebyshev point of `N+1`.
 """
-@inline ChebPoint(N) = cos.((N:-1:0) .* (π / N))
+@inline ChebPoint(N) = cos.((0:N) .* (π / N))
 
 export ChebPoint
 
@@ -38,7 +38,7 @@ function ChebDiffMat(N)
     end
     
     # diagonal
-    D[1,1] = -(2N^2+1)/6
+    D[1,1] = (2N^2+1)/6
     D[N+1,N+1] = -D[1,1]
     for i∈1:N-1 
         I=i+1
@@ -108,10 +108,9 @@ function ChebDiffFFT(v)
     U = real.(fft(V))
     W = real.(ifft(1im * k .* U)) 
 
-    # Because the x is defined in reversed direction so all derivative should be add with a negative.
-    @. w[2:N] = W[2:N] / sqrt(1-x[2:N]^2)
-    w[1] = -sum(@. ii^2 * U[ii+1])/N - 0.5*N*U[N+1]
-    w[N+1]   = -sum(@. (-1)^(ii+1) * ii^2 * U[ii+1])/N - 0.5*(-1)^(N+1)*N*U[N+1]
+    @. w[2:N] = -W[2:N] / sqrt(1-x[2:N]^2)
+    w[1] = sum(@. ii^2 * U[ii+1])/N + 0.5*N*U[N+1]
+    w[N+1] = sum(@. (-1)^(ii+1) * ii^2 * U[ii+1])/N + 0.5*(-1)^(N+1)*N*U[N+1]
 
     return w
 end

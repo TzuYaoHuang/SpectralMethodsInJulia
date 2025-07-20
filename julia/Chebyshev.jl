@@ -63,11 +63,11 @@ function SincDiff1(N)
 end
 
 """
-    ChebDiffMat(N)
+    SincDiff2(N)
 
 Compute second Fourier differention matrix with periodic Sinc method.
 """
-function ChebDiffMat(N)
+function SincDiff2(N)
     Δx = 2π/N
 	vr = [ifelse(i==1, -π^2/3Δx^2 - 1/6, (-1)^i/sin((i-1)*Δx/2)^2/2) for i∈1:N]
 	return Toeplitz(vr,vr)

@@ -1,6 +1,6 @@
 module Chebyshev
 
-using LinearAlgebra, FFTW
+using LinearAlgebra, FFTW, ToeplitzMatrices
 
 """
     ChebPoint(N)
@@ -14,7 +14,7 @@ export ChebPoint
 """
     ChebDiffMat(N)
 
-Compute Chebyshev differention matrix and Chebyshev collocation point of the size `N+1`
+Compute Chebyshev differention matrix and Chebyshev collocation point of the size `N+1`.
 """
 function ChebDiffMat(N)
     if N==0 
@@ -49,6 +49,32 @@ function ChebDiffMat(N)
 end
 
 export ChebDiffMat
+
+"""
+    SincDiff1(N)
+
+Compute first Fourier differention matrix with periodic Sinc method.
+"""
+function SincDiff1(N)
+    Δx = 2π/N
+	vr = [ifelse(i==1, 0., (-1)^i * cot((i-1)*Δx/2)/2) for i∈1:N]
+	vc = [ifelse(i==1, 0.,-(-1)^i * cot((i-1)*Δx/2)/2) for i∈1:N]
+	return Toeplitz(vc,vr)
+end
+
+"""
+    ChebDiffMat(N)
+
+Compute second Fourier differention matrix with periodic Sinc method.
+"""
+function ChebDiffMat(N)
+    Δx = 2π/N
+	vr = [ifelse(i==1, -π^2/3Δx^2 - 1/6, (-1)^i/sin((i-1)*Δx/2)^2/2) for i∈1:N]
+	return Toeplitz(vr,vr)
+end
+
+export SincDiff1, SincDiff2
+
 
 """
     polyInterp(t, y)

@@ -117,4 +117,26 @@ end
 
 export ChebDiffFFT
 
+"""
+    Cheb2Poly(N)
+
+    Given ∑ₙ aₙ Tₙ(x) = ∑ₙ cₙ xⁿ, where n=0...N, try to find a matrix A such that c = Aa.
+"""
+function Cheb2PolyMat(N)
+    Ng = N+1
+    A = zeros(Ng, Ng)
+    for i∈1:Ng
+        # initial 2 cases for recurence
+        (i==1 || i==2) && (A[i,i] = 1; continue)
+
+        # general recurence
+        # Tᵢ = 2xTᵢ₋₁ - Tᵢ₋₂
+        for j∈1:i
+            A[i,j] = (j==1 ? 0 : 2A[i-1,j-1]) - A[i-2,j]
+        end
+    end
+    return A
+end
+export Cheb2PolyMat
+
 end

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.8
+# v0.20.13
 
 using Markdown
 using InteractiveUtils
@@ -11,7 +11,7 @@ using Plots, SparseArrays, ToeplitzMatrices,LinearAlgebra,LaTeXStrings
 md"Estimate first derivative of a point with series of point values given in $[-\pi,\pi]$. The sample function here is $e^{\sin(x)}$."
 
 # ╔═╡ fb119ce3-0689-442d-94cb-d771cc8c400a
-md"The reason why dot comes in pair in spectral methods is that the shape is symmetry. If you skew the shape the pairnesss disappear. For example try yourself $f(x) = e^{\sin(x)-\sin(2x)/2}$, which is a surrogate of sawtooth wave. Furthermore if the derivative becomes discontinous, the convergence rate reduces to second order $(f(x) = e^{\sin(x)\lvert{\sin(x)}\rvert})$."
+md"The reason why dot comes in pair in spectral methods is that the shape is anti-symmetry and cosine function is symmetry, which make it redundant and thus does not change the accuracy for consecutive numbers of grids. If you skew the shape the pairnesss disappear. For example try yourself $f(x) = e^{\sin(x)-\sin(2x)/2}$, which is a surrogate of sawtooth wave. Furthermore if the derivative becomes discontinous, the convergence rate reduces to second order $(f(x) = e^{\sin(x)\lvert{\sin(x)}\rvert})$."
 
 # ╔═╡ b9fbd0db-2a04-4b4c-8d94-9bfdbad95f88
 plt = plot(); nothing
@@ -139,7 +139,7 @@ ToeplitzMatrices = "~0.8.5"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.5"
+julia_version = "1.11.6"
 manifest_format = "2.0"
 project_hash = "67e554d77ad8b16beec46393388cad3823ffe0ba"
 

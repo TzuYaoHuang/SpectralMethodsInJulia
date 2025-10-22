@@ -12,7 +12,7 @@ include("Chebyshev.jl"); using .Chebyshev
 
 # ╔═╡ 1caa76e1-68c2-4582-800b-7d07cadef61f
 md"Vibration on circular membrane of radius $1$ follows $\partial_{tt} y = 1/r\partial_r(r\partial_r y) + 1/r^2 \partial_{\theta\theta}y$ fixed on $y(r=1) = 0$.\
-Using separation of variable, $u(r,\theta,t) = u(r)e^{im\theta}e^{i\omega t}$, the governing equation becomes $1/r\partial_r(r\partial_r u) + (\omega^2-m^2/r^2)u = 0$ with $\partial_r u (0) = 0$ and $u(1) = 0$. This is a homogeneous eigenvalue problem and non-trivial result only exist when $1/r\partial_r(r\partial_r u) -m^2/r^2u = -\omega^2 u$. The solution is essentially Bessel function $J_m(\omega r)$ with $J_m(\omega) = 0.$"
+Using separation of variable, $u(r,\theta,t) = u(r)e^{im\theta}e^{i\omega t}$, the governing equation becomes $1/r\partial_r(r\partial_r u) + (\omega^2-m^2/r^2)u = 0$ with $\partial_r u (0) = 0$ and $u(1) = 0$. This is a homogeneous eigenvalue problem and non-trivial result only exist when $1/r\partial_r(r\partial_r u) -m^2/r^2u = -\omega^2 u$. The solution is essentially Bessel function $J_m(\omega r)$ with $J_m(\omega) = 0.$ N.B. However, I think the correct BCs is $u(-1) = u(1) = 0$. instead of $\partial_r u(0) = u(1) = 0$."
 
 # ╔═╡ 17118b97-5157-4de0-a827-314eafb213a2
 N = 50; nothing

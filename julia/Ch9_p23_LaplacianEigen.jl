@@ -11,47 +11,51 @@ using Plots, LaTeXStrings, LinearAlgebra, FFTW, ToeplitzMatrices, SpecialFunctio
 include("Chebyshev.jl"); using .Chebyshev
 
 # ╔═╡ 1caa76e1-68c2-4582-800b-7d07cadef61f
-md"Calculate the eigenvalues of $\partial_{xx} u = \lambda x u$ at $x\in[-1,1]$ with $u(\pm 1) = 0$. $\lambda$ can be regarded as the scaling, $\partial_{XX} u = X u$, of domain from $X\in[-L,L]$ to $x=X/L\in[-1,1]$ and $\lambda=L^3$."
+md"Calculate the eigenvalues and the corresponding shapes of $-(\partial_{xx}+\partial_{yy})u + f(x,y) u = \lambda u$ within $-1<x,y<1$ and with BC of $u = 0$. For $f(x,y) = 0$. It is obvious that $u = \sin(k_x(x+1))\sin(k_y(y+1))$ with $k_x$ and $k_y$ being $n\pi/2$, $n\in\mathbb{Z}$, so the resulting eigenvalues are $\lambda = k_x^2+k_y^2 = \pi^2(i^2+j^2)/4$, $i,j\in\mathbb{Z}$. We are going to see a the result of $f(x,y) = e^{20(y-x-1)}$"
 
-# ╔═╡ 7793cf1c-9b97-4978-8ba7-83718d88b2c6
+# ╔═╡ e4acf206-e297-4f27-98b5-9863ef2a03a0
+N = 30
+
+# ╔═╡ 85a5d0e8-f16a-4689-8351-841fe62b76a9
+f(x,y) = exp(20*(y-x-1)); nothing
+
+# ╔═╡ 9e89a43c-00da-43a2-9a21-409df0c10bba
 begin
-	p = plot(layout=(2,2), size=(800, 600))
-	i = 1
-	xx = -1:0.01:1
-	global λ=0
-	for (i,N)∈enumerate(12:12:48)
-		D,x = ChebDiffMat(N)
-		D2 = D^2; D2Inner = D2[2:end-1, 2:end-1]
-		B = Diagonal(x[2:end-1])
-		E = eigen(D2Inner,B)
-		eVal = E.values
-
-		positiveI = findall(x -> x > 0, eVal)
-		sortedI = sortperm(eVal[positiveI])
-		spI = positiveI[sortedI]
-		spI5 = spI[5]
-
-		global λ = eVal[spI5]
-		vInner = E.vectors[:,spI5]
-		vInner .= vInner/vInner[N÷2]*airy(0)
-		v = [0., vInner..., 0.]
-
-		pI=polyInterp(x,v)
-
-		pp = pI.(xx)
-		
-		plot!(p[i],xx,pp)
-		plot!(p[i],xlimit=[-1,1], title=L"N=%$(N), \lambda=%$(λ)")
-	end
-	plot!()
+	D,x = ChebDiffMat(N)
+	XX = x * ones(N+1)'
+	YY = ones(N+1) * x'
+	X = XX[2:end-1,2:end-1][:]
+	Y = YY[2:end-1,2:end-1][:]
+	D2 = D^2
+	D2Inner = D2[2:end-1,2:end-1]
+	Iinner = Matrix{Float64}(I, N-1, N-1)
+	L = - kron(Iinner,D2Inner) - kron(D2Inner,Iinner)
+	ff = f.(X,Y)
+	C = L .+ Diagonal(ff)
+	E = eigen(C)
+	nothing
 end
 
-# ╔═╡ 9fa6d8a4-4b4c-43f5-b050-f93e4c8e9725
+# ╔═╡ d2b09ecd-33f4-48f5-99d5-8835ae12c96a
 begin
-	L = cbrt(λ)
-	println("L = $(L), L³ = $(λ)")
-	aa = airy.(cbrt(λ)*xx)
-	plot(xx,aa,xlimit=[-1,1],ylimit=[-0.5,1], label=L"\mathrm{Ai}(%$(L)x)")
+	eVal = real.(E.values)
+	sortedI = sortperm(eVal)
+
+	p = plot(layout=(2,2), size=(950, 700))
+
+	uu = zeros(N+1,N+1); xr = reverse(x)
+	for i∈1:4
+		I = sortedI[i]
+		λ = eVal[I]
+		v = real.(E.vectors[:,I])
+
+		uu[2:end-1,2:end-1] .= reshape(reverse(v),N-1,N-1)
+		contourf!(p[i], xr,xr,uu',color=cgrad(:lighttemperaturemap),lw=0)
+    	plot!(p[i], xlimit=(-1,1),ylimit=(-1,1), aspect_ratio=:equal, xlabel=L"x", ylabel=L"y",title=L"\lambda=%$(λ*4/π^2)\pi^2/4")
+		
+	end
+	plot!()
+	
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1340,7 +1344,9 @@ version = "1.9.2+0"
 # ╠═658b81da-6594-11f0-0d58-a91d8b9302d3
 # ╠═8ec8baff-e497-4ddb-9ec6-587bebde510a
 # ╟─1caa76e1-68c2-4582-800b-7d07cadef61f
-# ╟─7793cf1c-9b97-4978-8ba7-83718d88b2c6
-# ╟─9fa6d8a4-4b4c-43f5-b050-f93e4c8e9725
+# ╠═e4acf206-e297-4f27-98b5-9863ef2a03a0
+# ╟─d2b09ecd-33f4-48f5-99d5-8835ae12c96a
+# ╟─9e89a43c-00da-43a2-9a21-409df0c10bba
+# ╟─85a5d0e8-f16a-4689-8351-841fe62b76a9
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

@@ -11,47 +11,54 @@ using Plots, LaTeXStrings, LinearAlgebra, FFTW, ToeplitzMatrices, SpecialFunctio
 include("Chebyshev.jl"); using .Chebyshev
 
 # ╔═╡ 1caa76e1-68c2-4582-800b-7d07cadef61f
-md"Calculate the eigenvalues of $\partial_{xx} u = \lambda x u$ at $x\in[-1,1]$ with $u(\pm 1) = 0$. $\lambda$ can be regarded as the scaling, $\partial_{XX} u = X u$, of domain from $X\in[-L,L]$ to $x=X/L\in[-1,1]$ and $\lambda=L^3$."
+md"Pseudospectra of Davies's complex harmonic oscillator: $\mathcal{L}\coloneq -\partial_{xx} + c x^2$. $c = 1+3i$ and $x\in[-6,6]$ are set to demonstrate. We discretize $\mathcal{L}$ to $\mathsf{L}$ and calculate $\sigma_\mathrm{min}(z\mathsf{I}-\mathsf{L})$ as the pseudospectra, where $(z\mathsf{I}-\mathsf{L})$ is resolvant showing how close it is close to the system's resonation point. The eigenvalues are $\sqrt{c}(2k+1)$ while the eigenfunctions are $e^{-\sqrt{c}x^2/2}H_k(c^{1/4}x)$."
 
-# ╔═╡ 7793cf1c-9b97-4978-8ba7-83718d88b2c6
+# ╔═╡ e4acf206-e297-4f27-98b5-9863ef2a03a0
+N = 70
+
+# ╔═╡ 8d814e35-a180-4702-9d34-a5df318fcee2
+md"However, Even far away from the eigenvalues, $(z\mathsf{I}-\mathsf{L})^{-1}$ has huge norm, so $\mathsf{L}$ acts as if it's if it’s ''almost singular'' for many $z$ -- not just near its eigenvalues, thus the eigenvalues, except the first few, has no physical significance."
+
+# ╔═╡ a359875a-f03e-4ee9-8ce7-3623f19229a0
 begin
-	p = plot(layout=(2,2), size=(800, 600))
-	i = 1
-	xx = -1:0.01:1
-	global λ=0
-	for (i,N)∈enumerate(12:12:48)
-		D,x = ChebDiffMat(N)
-		D2 = D^2; D2Inner = D2[2:end-1, 2:end-1]
-		B = Diagonal(x[2:end-1])
-		E = eigen(D2Inner,B)
-		eVal = E.values
+	c = 1+3im
+	L = 6
+	D,x = ChebDiffMat(N)
+	x .*= L; D ./= L
+	xInner = x[2:end-1]
+	D2 = D^2
+	D2Inner = D2[2:end-1,2:end-1]
+	A = -D2Inner .+ c*Diagonal(x[2:end-1].^2)
+	eVal = eigen(A).values	
 
-		positiveI = findall(x -> x > 0, eVal)
-		sortedI = sortperm(eVal[positiveI])
-		spI = positiveI[sortedI]
-		spI5 = spI[5]
+	ReL = 0:.5:50; ImL = 0:.5:40
+	σmin = zeros(length(ReL), length(ImL))
+	opnorm = copy(σmin)
+	II = Matrix{Float64}(I, N-1, N-1)
 
-		global λ = eVal[spI5]
-		vInner = E.vectors[:,spI5]
-		vInner .= vInner/vInner[N÷2]*airy(0)
-		v = [0., vInner..., 0.]
-
-		pI=polyInterp(x,v)
-
-		pp = pI.(xx)
-		
-		plot!(p[i],xx,pp)
-		plot!(p[i],xlimit=[-1,1], title=L"N=%$(N), \lambda=%$(λ)")
+	for (iRe,Re)∈enumerate(ReL), (iIm, Im)∈enumerate(ImL)
+		z = Re + Im*im
+		M = z*II .- A
+		E = svd(M)
+		σmin[iRe,iIm] = minimum(abs,E.S)
+		opnorm[iRe,iIm] = norm(inv(M))
 	end
-	plot!()
 end
 
-# ╔═╡ 9fa6d8a4-4b4c-43f5-b050-f93e4c8e9725
+# ╔═╡ 27219a0a-9185-4317-933e-524f13898b75
 begin
-	L = cbrt(λ)
-	println("L = $(L), L³ = $(λ)")
-	aa = airy.(cbrt(λ)*xx)
-	plot(xx,aa,xlimit=[-1,1],ylimit=[-0.5,1], label=L"\mathrm{Ai}(%$(L)x)")
+	plot(size=(650,500))
+	contourf!(ReL,ImL, log10.(σmin'),levels=collect(-4.5:0.5:1.5), color=cgrad(:roma;rev=true))
+	scatter!(real.(eVal),imag.(eVal),color=:red,label="Eigenvalue")
+	plot!(aspect_ratio=:equal, xlimit=(0,50),ylimit=(0,40),xlabel=L"\mathfrak{Re}",ylabel=L"\mathfrak{Im}", title=L"\log_{10}(\sigma_\mathrm{min}(z\mathsf{I}-\mathsf{L}))")
+end
+
+# ╔═╡ 6c3a5c2d-face-4e73-b302-3bf61d602c78
+begin
+	plot(size=(650,500))
+	contourf!(ReL,ImL, log10.(opnorm'),levels=10, color=cgrad(:roma;rev=true))
+	scatter!(real.(eVal),imag.(eVal),color=:red,label="Eigenvalue")
+	plot!(aspect_ratio=:equal, xlimit=(0,50),ylimit=(0,40),xlabel=L"\mathfrak{Re}",ylabel=L"\mathfrak{Im}", title=L"||{z\mathsf{I}-\mathsf{L}}{||}_2")
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1340,7 +1347,10 @@ version = "1.9.2+0"
 # ╠═658b81da-6594-11f0-0d58-a91d8b9302d3
 # ╠═8ec8baff-e497-4ddb-9ec6-587bebde510a
 # ╟─1caa76e1-68c2-4582-800b-7d07cadef61f
-# ╟─7793cf1c-9b97-4978-8ba7-83718d88b2c6
-# ╟─9fa6d8a4-4b4c-43f5-b050-f93e4c8e9725
+# ╠═e4acf206-e297-4f27-98b5-9863ef2a03a0
+# ╟─27219a0a-9185-4317-933e-524f13898b75
+# ╟─8d814e35-a180-4702-9d34-a5df318fcee2
+# ╟─6c3a5c2d-face-4e73-b302-3bf61d602c78
+# ╟─a359875a-f03e-4ee9-8ce7-3623f19229a0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

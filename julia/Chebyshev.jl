@@ -2,12 +2,13 @@ module Chebyshev
 
 using LinearAlgebra, FFTW, ToeplitzMatrices
 
+@inline ChebΘ(N) = (0:N) .* (π / N)
 """
     ChebPoint(N)
 
 Return Chebyshev point of `N+1`.
 """
-@inline ChebPoint(N) = cos.((0:N) .* (π / N))
+@inline ChebPoint(N) = cos.(ChebΘ(N))
 
 export ChebPoint
 
@@ -164,5 +165,63 @@ function Cheb2PolyMat(N)
     return A
 end
 export Cheb2PolyMat
+
+"""
+    ChebyODEQuad(N)
+
+    Return weight and points deducted from ODE style of Chebyshev differentiation matrix. 
+    This sacrifice one order as the point at x = -1 is sacrificed.
+"""
+function ChebyODEQuad(N)
+    D,x = ChebDiffMat(N)
+    xI = x[1:end-1]
+    D⁻¹= D[1:end-1,1:end-1]^-1
+    w = D⁻¹[1,:]
+    return w, xI
+end
+export ChebyODEQuad
+
+"""
+    ClenshawCurtis(N)
+
+    Return weight and points of Clenshaw-Curtis quadrature.
+"""
+function ClenshawCurtisQuad(N)
+    w = zeros(N+1); v = ones(N-1)
+    θ = ChebΘ(N)[2:end-1]
+    if mod(N,2) == 0
+        w[1] = w[end] = 1/(N^2-1)
+        for k∈1:(N÷2-1) 
+            @. v -= 2cos(2k*θ)/(4k^2-1)
+        end
+        @. v -= cos(N*θ)/(N^2-1)
+    else
+        w[1] = w[end] = 1/(N^2)
+        for k∈1:(N-1)÷2 
+            @. v -= 2cos(2k*θ)/(4k^2-1)
+        end
+    end
+    w[2:end-1] .= 2v/N
+
+    return w, ChebPoint(N)
+end
+export ClenshawCurtisQuad
+
+"""
+    GaussLegendreQuad(N)
+
+    Return weight and points of Gauss-Legendre quadrature.
+"""
+function GaussLegendreQuad(N)
+    β = 0.5 ./ sqrt.(1 .- (2*(1:N-1)).^(-2))
+    T = diagm(1 => β) + diagm(-1 => β)
+    D, V = eigen(T)
+    x = D # root of legendre polynomial
+    i = sortperm(x)
+    x = x[i]
+    w = 2 * V[1, i].^2
+    return w, x
+end
+export GaussLegendreQuad
 
 end

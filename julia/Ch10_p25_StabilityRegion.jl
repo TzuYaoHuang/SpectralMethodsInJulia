@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.19
+# v0.20.20
 
 using Markdown
 using InteractiveUtils
@@ -11,10 +11,22 @@ using Plots, LaTeXStrings
 md"Stability region for Adams-Bashforth (explicit), Adams-Moulton (implicit), backward differentiation (implicit), and Runge-Kutta (explicit) formulas of first order ODE: $\partial_t u = \lambda u$."
 
 # ╔═╡ 8eb06dfa-c74f-4a00-95cd-cdcbd47bda98
-md"Generally, if we want to get $u^{(n+s)}$ from the information of $u^{(n)} ... u^{(n+s)}$ in linear multistage method, we can express the multistep into $\sum_{j = 0}^s a_j y^{(n+j)} = \Delta t \sum_{j = 0}^s b_j f(u^{(n+j)})$. Note that if $b_s\neq 0$ then it is implicit method. $\sum_{j = 0}^s (a_j - z b_j) y^{(n+j)} = 0$, where $z = \lambda \Delta t$. As we know the solution of the ODE behave like: $u(t)=u_0 e^{\lambda t}$, or $u^{(n+j)} \sim \zeta^j$ (ansatz), where $\zeta$ is the consecutive ratio of numerical $u$. Plugin and we can get a Charateristic polynomial $\rho(\zeta)-z\sigma(\zeta)$, where $\rho(\zeta) = \sum_{j = 0}^s a_j \zeta^j$ and $\sigma(\zeta) = \sum_{j = 0}^s b_j \zeta^j.$ For all $z$ that able to make $|{\zeta}|\leq 1$ are the stability region. As such the boundary is $|\zeta| = 1$ or $\zeta = e^{i\theta}$. Then boundary of the stability region is $z = \rho(e^{i\theta})/\sigma(e^{i\theta})$. Black line show the border, while green and red show the contour of $0.98$ and $1.02$. Dahlquist’s barriers imply the linear multistep method is more unstable in higher order."
+md"Generally, if we want to get $u^{(n+s)}$ from the information of $u^{(n)} ... u^{(n+s)}$ in linear multistage method, we can express the multistep into $\sum_{j = 0}^s a_j y^{(n+j)} = \Delta t \sum_{j = 0}^s b_j f(u^{(n+j)})$. Note that if $b_s\neq 0$ then it is implicit method. $\sum_{j = 0}^s (a_j - z b_j) y^{(n+j)} = 0$, where $z = \lambda \Delta t$. As we know the solution of the ODE behave like: $u(t)=u_0 e^{\lambda t}$, or $u^{(n+j)} \sim \zeta^j$ (ansatz), where $\zeta$ is the consecutive ratio of numerical $u$. Plugin and we can get a Charateristic polynomial $\rho(\zeta)-z\sigma(\zeta)$, where $\rho(\zeta) = \sum_{j = 0}^s a_j \zeta^j$ and $\sigma(\zeta) = \sum_{j = 0}^s b_j \zeta^j.$ For all $z$ that able to make $|{\zeta}|\leq 1$ are the stability region. As such the boundary is $|\zeta| = 1$ or $\zeta = e^{i\theta}$. Then boundary of the stability region is $z = \rho(e^{i\theta})/\sigma(e^{i\theta})$. Black line show the border, while green and red show the contour of $0.98$ and $1.02$. Dahlquist's barriers imply the linear multistep method is more unstable in higher order."
 
 # ╔═╡ f4f9bec3-b4d0-4d2f-b628-37aa3ed89aa0
-md"On the other hand, the Runge-Kutta method approximate the truncated Taylor series of an exponential function. $u(t+\Delta t) = e^{z}u(t)$ in continous domain corresponds to $u^{(n+1)} = R(z)u^{(n)}$ in discrete domain. $R(z)$ could be approximated by Taylor series of exponential function: $e^z\approx R(z) = \sum_{i=0}^{p} z^i/i!$ with $p$ the order or Runge Kutta. In this regards, we are solving $R(z) = e^{i\theta}$ for the stability boundary. We can use Newton-Raphason method to solve the equation. Note that explicit RK gives Taylor approximation while implicit one gives Pade approximation"
+md"On the other hand, the explicit Runge-Kutta method approximate the truncated Taylor series of an exponential function. $u(t+\Delta t) = e^{z}u(t)$ in continous domain corresponds to $u^{(n+1)} = R(z)u^{(n)}$ in discrete domain. $R(z)$ could be approximated by Taylor series of exponential function: $e^z\approx R(z) = \sum_{i=0}^{p} z^i/i!$ with $p$ the order or Runge Kutta. In this regards, we are solving $R(z) = e^{i\theta}$ for the stability boundary. We can use Newton-Raphason method to solve the equation. Note that explicit RK gives Taylor approximation while implicit one gives Pade approximation"
+
+# ╔═╡ 9163194c-7955-4dd5-9eab-f6f660d4bae4
+md"""
+Implicit Runge-Kutta method based on Pade approximant of exponential function:
+
+$e^{z} \approx R_{m,n}(z) = \frac{P_{m,n}(z)}{Q_{m,n}(z)}$
+
+with 
+
+$P_{m,n}(z) = \sum_{k=0}^{m} \binom{m+n-k}{m-k} \frac{z^k}{k!},\quad Q_{m,n}(z) = \sum_{k=0}^{n} \binom{m+n-k}{n-k} \frac{(-z)^k}{k!}$
+
+"""
 
 # ╔═╡ e5d061f9-4399-4d1a-9d82-5035eee3dfa0
 begin
@@ -35,13 +47,70 @@ function plotStabilityR!(p, ρ, σ, ζm=1)
 end
 
 # ╔═╡ 3415b6df-4d5b-4bd4-9640-15f698e71088
+e(z,p) = sum((i)->z^i/factorial(i), 0:p)
+
+# ╔═╡ e475dc04-4d65-446f-bf27-2ae1436738a8
 begin
-	e(z,p) = sum((i)->z^i/factorial(i), 0:p)
+	# Padé approximant R(m,n)(z) = P_m(z) / Q_n(z)
+	# For diagonal Padé (m=n), we have specific formulas
+	
+	# Diagonal Padé approximants for exp(z)
+	P(z, m, n) = sum(k -> binomial(m+n-k, m-k) *    z^k / factorial(k), 0:m)
+	dP(z, m, n)= sum(k -> k==0 ? 0 : binomial(m+n-k, m-k) *z^(k-1) / factorial(k-1), 0:m)
+	Q(z, m, n) = sum(k -> binomial(m+n-k, n-k) * (-z)^k / factorial(k), 0:n)
+	dQ(z, m, n)= sum(k -> k==0 ? 0 : binomial(m+n-k, n-k) *-(-z)^(k-1) / factorial(k-1), 0:n)
+	
+	# Stability function for implicit RK using Padé approximant
+	R(z, m, n) = P(z, m, n) / Q(z, m, n)
+	# dR(z,m,n)  = (R(z+1e-6,m,n)-R(z-1e-6,m,n))/2e-6
+	dR(z,m, n) = dP(z, m, n)/Q(z, m, n) - R(z, m, n)*dQ(z, m, n)/Q(z, m, n)
+end
+
+# ╔═╡ 8d78be81-9b58-4a69-8703-ce4d94ac59db
+function plotStabilityRK_implicit!(p, m, n)
+	# For implicit RK using diagonal Padé(order, order)
+	# Solve R_pade(z, order) = e^(iθ)
+	
+	zS = zeros(ComplexF64, size(θ))
+	mn = m+n
+	
+	# Boundary |ζ| = 1
+	w = 0 + 0im
+	for (ii, ϕ) in enumerate(θ)
+		target = exp(1im * ϕ*mn)
+		# Newton-Raphson to solve R_pade(z) = target
+		w = w - (R(w,m,n)-target)/dR(w,m,n)
+		w = w - (R(w,m,n)-target)/dR(w,m,n)
+		zS[ii] = w
+	end
+	plot!(p, zS, color=:black)
+	
+	# Contour |ζ| = 1 + δ (red)
+	w = 0 + 0im
+	for (ii, ϕ) in enumerate(θ)
+		target = (1 + 3δ) * exp(1im * ϕ*mn)
+		w = w - (R(w,m,n)-target)/dR(w,m,n)
+		w = w - (R(w,m,n)-target)/dR(w,m,n)
+		zS[ii] = w
+	end
+	plot!(p, zS, color=:red)
+	
+	# Contour |ζ| = 1 - δ (green)
+	w = 0 + 0im
+	for (ii, ϕ) in enumerate(θ)
+		target = (1 - 3δ) * exp(1im * ϕ*mn)
+		w = w - (R(w,m,n)-target)/dR(w,m,n)
+		w = w - (R(w,m,n)-target)/dR(w,m,n)
+		zS[ii] = w
+	end
+	plot!(p, zS, color=:green)
+	
+	return p
 end
 
 # ╔═╡ 458d482f-f3f4-481b-bc50-4104b012f44b
 begin
-	p = plot(layout=(2,2), size=(800,800))
+	p = plot(layout=(3,2), size=(800,1200))
 
 	# Adams-Bashforth
     i = 1
@@ -90,7 +159,7 @@ begin
 	end
 	plot!(p[i], title="Backward Differentiation",legend=false, xlabel=L"\mathfrak{Re}(z)", ylabel=L"\mathfrak{Im}(z)", xlimit=(-15,35), ylimit=(-25,25), aspect_ratio=:equal)
 
-	# Runge-Kutta method
+	# Explicit Runge-Kutta method
     i = 4
 	zS = zeros(ComplexF64, size(θ))
 	for po∈1:6
@@ -113,7 +182,19 @@ begin
 		end
 		plot!(p[i], zS, color=:green)
 	end
-	plot!(p[i], title="Runge-Kutta",legend=false, xlabel=L"\mathfrak{Re}(z)", ylabel=L"\mathfrak{Im}(z)", xlimit=(-5,2), ylimit=(-3.5,3.5), aspect_ratio=:equal)
+	plot!(p[i], title="Runge-Kutta (Explicit/Taylor)",legend=false, xlabel=L"\mathfrak{Re}(z)", ylabel=L"\mathfrak{Im}(z)", xlimit=(-5,2), ylimit=(-3.5,3.5), aspect_ratio=:equal)
+
+	
+	# Implicit Runge-Kutta (Padé approximants)
+	i = 5
+	for n in 1:3
+		for m in n-1:n
+			plotStabilityRK_implicit!(p[i], m,n)
+		end
+	end
+	plot!(p[i], title="Runge-Kutta (Implicit/Padé)",legend=false, xlabel=L"\mathfrak{Re}(z)", ylabel=L"\mathfrak{Im}(z)", xlimit=(-15,15), ylimit=(-15,15), aspect_ratio=:equal)
+	
+	p
 	
 end
 
@@ -1227,9 +1308,12 @@ version = "1.9.2+0"
 # ╟─69870a84-a107-4a45-b193-e94b83ed26f7
 # ╟─8eb06dfa-c74f-4a00-95cd-cdcbd47bda98
 # ╟─f4f9bec3-b4d0-4d2f-b628-37aa3ed89aa0
+# ╟─9163194c-7955-4dd5-9eab-f6f660d4bae4
 # ╠═e5d061f9-4399-4d1a-9d82-5035eee3dfa0
 # ╟─458d482f-f3f4-481b-bc50-4104b012f44b
 # ╟─5ba5917f-71ae-42b3-9b19-4d2ec6e6882f
 # ╟─3415b6df-4d5b-4bd4-9640-15f698e71088
+# ╟─e475dc04-4d65-446f-bf27-2ae1436738a8
+# ╟─8d78be81-9b58-4a69-8703-ce4d94ac59db
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

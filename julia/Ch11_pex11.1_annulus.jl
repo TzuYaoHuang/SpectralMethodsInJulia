@@ -11,17 +11,19 @@ using Plots, LaTeXStrings, LinearAlgebra, FFTW, ToeplitzMatrices, SpecialFunctio
 include("Chebyshev.jl"); using .Chebyshev
 
 # ╔═╡ 85d9dda9-2e2a-4a60-b893-4ab0aec8fba0
-md"We try to solve the BVP eigen problem
+md"We try to solve the BVP eigen problem on annulus
 
-$\partial_{rr} + 1/r\partial-r u +1/r^2 \partial_{\theta\theta} u = -\lambda^2 u.$
+$\partial_{rr} + 1/r\partial-r u +1/r^2 \partial_{\theta\theta} u = -\lambda^2 u$
 
-Chebyshev points are distributed through $r\in[-1,1],$ so $u(r,\theta) = u(-r,\theta+\pi).$ We shall exploit the symmetry to reduce the redundant DoF of the system.
+$r\in[1,2],\quad u(1) = u(2) = 0$
+
+Chebyshev points are distributed through $r\in[1,2],$ so $u(r,\theta) = u(-r,\theta+\pi).$ We shall exploit the symmetry to reduce the redundant DoF of the system.
 "
 
 # ╔═╡ d432bfd4-b4bf-41af-b1db-a863f1d68de3
 begin
-	Nᵣ = 51  # should be odd to avoid point @ r=0
-	Nₜ = 40  # number of grid in θ direction
+	Nᵣ = 50
+	Nₜ = 50  # number of grid in θ direction
 	nothing
 end
 
@@ -29,27 +31,21 @@ end
 begin
 	# Radial Coordinate
 	D,r = ChebDiffMat(Nᵣ)
+    @. r = (r+3)/2
 	D2 = D^2
 
-	Nᵣ2 = (Nᵣ-1)÷2
-	D1 = D2[2:Nᵣ2+1, 2:Nᵣ2+1]
-	D2 = D2[2:Nᵣ2+1, end-1:-1:end-Nᵣ2]
-
-	E1 = D[2:Nᵣ2+1, 2:Nᵣ2+1]
-	E2 = D[2:Nᵣ2+1, end-1:-1:end-Nᵣ2]
+    D = D[2:end-1, 2:end-1]
+    D2 = D2[2:end-1, 2:end-1]
 
 	# Theta Coordinate
 	dθ = 2π/Nₜ
 	θ = (1:Nₜ) * dθ
-	Nₜ2 = Nₜ÷2
 	D2ₜ = SincDiff2(Nₜ)
 
 	# Laplacian
-	R⁻¹ = Diagonal(1 ./r[2:Nᵣ2+1])
-	Z = zeros(Nₜ2,Nₜ2)
-	Id = Diagonal(ones(Nₜ2))
+	R⁻¹ = Diagonal(1 ./r[2:end-1])
 
-	L = kron(D1 + R⁻¹*E1, [Id Z; Z Id]) + kron(D2 + R⁻¹*E2, [Z Id; Id Z]) + kron(R⁻¹^2, D2ₜ)
+	L = kron(D2 + R⁻¹*D, I(Nₜ)) + kron(R⁻¹^2, D2ₜ)
 	nothing
 end
 
@@ -67,7 +63,7 @@ end
 begin
 	p = plot(layout=(2,2), size=(800, 800))
 	for (i, ie)∈enumerate([1,3,6,10])
-		heatmap!(p[i], θ, reverse(r[2:Nᵣ2+1]), reverse(reshape(V[:,ie], (Nₜ,Nᵣ2))', dims=1); projection=:polar, colorbar = false, title="$(sqrt(λ[i]))")
+		heatmap!(p[i], θ, reverse(r[2:end-1]), reverse(reshape(V[:,ie], (Nₜ,Nᵣ-1))', dims=1); projection=:polar, colorbar = false, title="$(sqrt(λ[i]))")
 	end
 	p
 end

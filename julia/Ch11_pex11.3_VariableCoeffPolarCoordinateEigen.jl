@@ -13,7 +13,7 @@ include("Chebyshev.jl"); using .Chebyshev
 # ╔═╡ 85d9dda9-2e2a-4a60-b893-4ab0aec8fba0
 md"We try to solve the BVP eigen problem
 
-$\partial_{rr} + 1/r\partial-r u +1/r^2 \partial_{\theta\theta} u = -\lambda^2 u.$
+$\partial_{rr} + 1/r\partial-r u +1/r^2 \partial_{\theta\theta} u = -\frac{1+2r}{2}\lambda^2 u.$
 
 Chebyshev points are distributed through $r\in[-1,1],$ so $u(r,\theta) = u(-r,\theta+\pi).$ We shall exploit the symmetry to reduce the redundant DoF of the system.
 "
@@ -50,12 +50,13 @@ begin
 	Id = Diagonal(ones(Nₜ2))
 
 	L = kron(D1 + R⁻¹*E1, [Id Z; Z Id]) + kron(D2 + R⁻¹*E2, [Z Id; Id Z]) + kron(R⁻¹^2, D2ₜ)
+    M = kron(Diagonal((1 .+ 2r[2:Nᵣ2+1])/2), [Id Z; Z Id])
 	nothing
 end
 
 # ╔═╡ 637cda19-eeae-4f2f-b049-428463d3bfe6
 begin
-	E = eigen(-L)
+	E = eigen(-L,M)
 	eVal = real.(E.values)
 	sortedI = sortperm(eVal)
 	λ = eVal[sortedI]; λ ./= λ[1]

@@ -30,7 +30,7 @@ $P_{m,n}(z) = \sum_{k=0}^{m} \binom{m+n-k}{m-k} \frac{z^k}{k!},\quad Q_{m,n}(z) 
 
 # ╔═╡ e5d061f9-4399-4d1a-9d82-5035eee3dfa0
 begin
-	θ = 0:0.01:2π
+	θ = 0:0.001:2π
 	δ = 0.02
 	nothing
 end
@@ -187,12 +187,13 @@ begin
 	
 	# Implicit Runge-Kutta (Padé approximants)
 	i = 5
+	xylimit=20
 	for n in 1:3
 		for m in n-1:n
-			plotStabilityRK_implicit!(p[i], m,n)
+			plotStabilityRK_implicit!(p[i], m, n)
 		end
 	end
-	plot!(p[i], title="Runge-Kutta (Implicit/Padé)",legend=false, xlabel=L"\mathfrak{Re}(z)", ylabel=L"\mathfrak{Im}(z)", xlimit=(-15,15), ylimit=(-15,15), aspect_ratio=:equal)
+	plot!(p[i], title="Runge-Kutta (Implicit/Padé)",legend=false, xlabel=L"\mathfrak{Re}(z)", ylabel=L"\mathfrak{Im}(z)", xlimit=(-xylimit,xylimit), ylimit=(-xylimit,xylimit), aspect_ratio=:equal)
 	
 	p
 	

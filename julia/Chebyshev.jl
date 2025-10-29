@@ -224,4 +224,73 @@ function GaussLegendreQuad(N)
 end
 export GaussLegendreQuad
 
+"""
+    barycentricDiffMatrix(x::AbstractVector)
+
+Return the spectral differentiation matrix D (size N×N)
+associated with distinct nodes x[1:N].
+
+Implements Trefethen Eq. (6.8-6.9):
+    D_ij = a_i / (a_j * (x_i - x_j))  for i ≠ j,
+    D_jj = -Σ_{k≠j} D_jk
+"""
+function barycentricDiffMatrix(x::AbstractVector)
+    N = length(x)
+    D = zeros(eltype(x), N, N)
+    if N==1 return D.+1 end
+
+    # compute barycentric weights a_j = 1 / Π_{k≠j} (x_j - x_k)
+    a = ones(eltype(x), N)
+    for j in 1:N
+        for k in 1:N
+            j == k && continue
+            a[j] *= (x[j] - x[k])
+        end
+    end
+
+    # fill off-diagonal entries
+    for i in 1:N
+        for j in 1:N
+            i == j && continue
+            D[i,j] = a[i] / (a[j] * (x[i] - x[j]))
+        end
+    end
+
+    # diagonal entries: ensure each row sums to zero
+    @inbounds for j in 1:N
+        D[j,j] = -sum(D[j,k] for k in 1:N if k != j)
+    end
+
+    return D
+end
+export barycentricDiffMatrix
+
+"""
+    quad_weights(x::AbstractVector)
+
+Compute quadrature weights for arbitrary distinct nodes `x` in [-1,1]
+by solving a Vandermonde system enforcing polynomial exactness.
+
+Returns:
+    w :: Vector   (quadrature weights)
+
+Guarantees:
+    ∑ w_j x_j^k = ∫_{-1}^{1} x^k dx  for k = 0:(N-1)
+"""
+function quad_weights(x::AbstractVector)
+    N = length(x)
+
+    # Build Vandermonde matrix: V[k,j] = x_j^(k-1)
+    V = [x[j] .^ (k-1) for k in 1:N, j in 1:N]  # (N×N) matrix
+
+    # Exact integrals of monomials over [-1,1]
+    I = [ (k-1) % 2 == 0 ? 2 / k : 0.0 for k in 1:N ]
+
+    # Solve Vᵀ * w = I
+    w = V \ I
+
+    return w
+end
+export quad_weights
+
 end
